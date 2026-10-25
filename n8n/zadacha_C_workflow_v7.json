@@ -1,0 +1,99 @@
+{
+  "name": "Задача C v7 — форма + webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Задача C v7 — кастомная форма + webhook\n\nФорма отдаётся сервисом (GET /form), тянет /spravochniki, шлёт TripRequest на этот Webhook.\nWebhook -> HTTP /generate -> ответ форме.\n\nТело для сервиса берём из $json.body (webhook кладёт присланный JSON туда).\nCORS: в ноде Webhook задайте Allowed Origins = *  (или адрес формы).\nНа Linux-Docker контейнеру n8n нужен --add-host host.docker.internal:host-gateway.",
+        "height": 280,
+        "width": 440
+      },
+      "id": "note",
+      "name": "Инструкция",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "zadacha-c",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "webhook",
+      "name": "Webhook: данные формы",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        40,
+        0
+      ],
+      "webhookId": "zadacha-c-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8077/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "id": "http",
+      "name": "Сервис документов: весь пакет",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "id": "resp",
+      "name": "Ответ форме",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        560,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: данные формы": {
+      "main": [
+        [
+          {
+            "node": "Сервис документов: весь пакет",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сервис документов: весь пакет": {
+      "main": [
+        [
+          {
+            "node": "Ответ форме",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

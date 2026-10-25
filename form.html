@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Документы на загрузку — задача C</title>
+<style>
+  :root{ --bg:#f4f6fb; --card:#fff; --line:#e3e8f0; --ink:#1f2a44; --muted:#6b7793;
+         --accent:#2f6df0; --accent2:#eaf1ff; --ok:#1f9d55; --warn:#b9770a; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+        font:15px/1.45 -apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+  .wrap{ max-width:880px; margin:0 auto; padding:24px 16px 80px; }
+  header h1{ font-size:22px; margin:0 0 4px; }
+  header p{ color:var(--muted); margin:0 0 20px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px;
+         padding:18px 20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(20,30,60,.04); }
+  .card h2{ font-size:15px; margin:0 0 14px; color:var(--accent); letter-spacing:.2px; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
+  .grid .full{ grid-column:1 / -1; }
+  label{ display:block; font-size:12.5px; color:var(--muted); margin:0 0 4px; }
+  input,select,textarea{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:9px;
+                font:inherit; color:var(--ink); background:#fff; resize:vertical; }
+  input:focus,select:focus,textarea:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent2); }
+  .req label::after{ content:" *"; color:#d23; }
+  .invalid, .invalid:focus{ border-color:#d23 !important; box-shadow:0 0 0 3px #fde7e6 !important; background:#fff7f7; }
+  .hidden{ display:none !important; }
+  .hint{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .vyg{ border:1px dashed var(--line); border-radius:10px; padding:12px; margin-bottom:10px; }
+  button{ background:var(--accent); color:#fff; border:0; border-radius:10px; padding:12px 22px;
+          font:600 15px/1 inherit; cursor:pointer; }
+  button:disabled{ opacity:.55; cursor:default; }
+  .bar{ position:sticky; bottom:0; background:linear-gradient(#f4f6fbcc,#f4f6fb);
+        padding:14px 0; display:flex; gap:14px; align-items:center; }
+  #result{ margin-top:8px; font-size:14px; }
+  #result .box{ border-radius:10px; padding:12px 14px; margin-top:8px; }
+  .box.ok{ background:#eafaf0; border:1px solid #bfe6cd; }
+  .box.err{ background:#fdeceb; border:1px solid #f3c4c0; }
+  .box.warn{ background:#fff7e6; border:1px solid #f0dcb0; }
+  .box ul{ margin:6px 0 0; padding-left:18px; }
+  .ziplink{ display:inline-block; margin-top:8px; padding:8px 14px; background:var(--accent);
+            color:#fff; border-radius:8px; text-decoration:none; font-weight:600; }
+  code{ background:#eef1f7; padding:1px 5px; border-radius:5px; font-size:12.5px; }
+  .daterow{ display:flex; gap:6px; align-items:center; }
+  .daterow > input[type="text"], .daterow > input:not([type]){ flex:1; }
+  .calbtn{ flex:none; width:42px; padding:0; font-size:16px; background:#eef1f7; color:#333; border:1px solid var(--line); }
+  .calhidden{ display:none; }
+  #resetBtn{ background:#eef1f7; color:#333; border:1px solid var(--line); }
+  #paketHint{ font-weight:600; color:var(--accent); }
+  .tmcRow{ display:flex; gap:8px; margin-bottom:6px; }
+  .tmcRow .tmc_naim{ flex:2; } .tmcRow .tmc_kol{ flex:1; }
+  .tmcRow .pril_n, .tmcRow .pril_d{ flex:1; }
+  .tmcDel{ flex:none; width:38px; padding:0; background:#eef1f7; color:#a33; border:1px solid var(--line); }
+  #addTmcBtn{ background:#eef1f7; color:#333; border:1px solid var(--line); padding:8px 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Документы на загрузку</h1>
+    <p>Задача C — пакет документов. Данные водителя/ТС — из сообщения перевозчика.</p>
+  </header>
+
+  <form id="f" autocomplete="off">
+    <!-- Поставщик и склад -->
+    <div class="card">
+      <h2>ПОСТАВЩИК И СКЛАД</h2>
+      <div class="grid">
+        <div class="req"><label>Поставщик</label>
+          <select id="postavshchik"></select></div>
+        <div></div>
+        <div id="postManualNazvWrap" class="hidden"><label>Поставщик «Другой» — название</label>
+          <input id="post_manual_nazv" placeholder="ООО «…»"></div>
+        <div id="postManualDogWrap" class="hidden"><label>№ договора (для доверенности)</label>
+          <input id="post_manual_dog"></div>
+        <div class="req"><label>Склад погрузки</label>
+          <select id="sklad"></select></div>
+        <div></div>
+        <div id="skManualNazvWrap" class="hidden"><label>Склад «Другой» — название</label>
+          <input id="sklad_nazv"></div>
+        <div id="skManualAdrWrap" class="hidden"><label>Склад «Другой» — адрес</label>
+          <input id="sklad_adres"></div>
+        <div id="skManualKonWrap" class="hidden full"><label>Склад «Другой» — контакт</label>
+          <input id="sklad_kontakt" placeholder="ФИО, телефон"></div>
+      </div>
+    </div>
+
+    <!-- Заявка -->
+    <div class="card">
+      <h2>ЗАЯВКА И ПЕРЕВОЗКА</h2>
+      <div class="grid">
+        <div class="req"><label>Перевозчик (адресат заявки)</label>
+          <select id="perevozchik"></select></div>
+        <div id="perevozchikManualWrap" class="hidden"><label>Перевозчик «Другой» — название</label>
+          <input id="perevozchik_manual" placeholder="ООО «…»"></div>
+        <div class="req"><label>Исх. № заявки</label><input id="zayavka_nomer">
+          <div class="hint" id="nomerHint"></div></div>
+        <div class="full"><label>Маршрут (откуда — куда)</label>
+          <input id="marshrut" placeholder="если пусто — соберётся из склада"></div>
+        <div class="req"><label>Дата загрузки</label>
+          <div class="daterow"><input id="data_zagruzki" placeholder="18.06.2026">
+            <button type="button" class="calbtn" data-for="data_zagruzki" title="Календарь">📅</button>
+            <input type="date" class="calhidden" id="data_zagruzki_cal"></div></div>
+        <div><label>Ставка фрахта</label><input id="stavka" placeholder="1100р">
+          <div class="hint">укажите валюту, напр. 1100 р</div></div>
+      </div>
+    </div>
+
+    <!-- Быстрое заполнение водителя из текста перевозчика -->
+    <div class="card">
+      <h2>ВСТАВИТЬ ДАННЫЕ ВОДИТЕЛЯ (из сообщения перевозчика)</h2>
+      <textarea id="voditel_raw" rows="6" placeholder="Авто: Даф АА 0003-7&#10;Прицеп: Шмитц АБ 0003-7&#10;Водитель: Кузнецов Кирилл Кириллович&#10;Паспорт: НВ 0000003 выдан Ленинским РОВД г.Минска 02.05.2024&#10;Тел.: +375 29 0000003 / +7 900 0000003"></textarea>
+      <div style="margin-top:8px">
+        <button type="button" id="parseBtn">Разобрать</button>
+        <span class="hint" id="parseStatus"></span>
+      </div>
+      <div class="hint">Заполнит поля водителя ниже — проверьте и поправьте при необходимости.</div>
+    </div>
+
+    <!-- Водитель -->
+    <div class="card">
+      <h2>ВОДИТЕЛЬ И ТС</h2>
+      <div class="grid">
+        <div class="req full"><label>ФИО водителя</label><input id="fio"></div>
+        <div class="req"><label>Паспорт: серия</label><input id="pas_ser" placeholder="НВ"></div>
+        <div class="req"><label>Паспорт: номер</label><input id="pas_nom" placeholder="0000001"></div>
+        <div><label>Паспорт: кем выдан</label><input id="pas_vyd"></div>
+        <div><label>Паспорт: дата выдачи</label><input id="pas_data" placeholder="01.12.2020"></div>
+        <div class="req"><label>Авто (марка, гос. номер)</label><input id="avto"></div>
+        <div><label>Прицеп (марка, гос. номер)</label><input id="pricep"></div>
+        <div><label>Телефон (РБ)</label><input id="tel_by"></div>
+        <div><label>Телефон (РФ) — может не быть</label><input id="tel_ru"></div>
+      </div>
+    </div>
+
+    <!-- Груз -->
+    <div class="card">
+      <h2>ГРУЗ</h2>
+      <div class="grid">
+        <div class="full"><label>Объём / размеры груза</label><input id="gabarit" placeholder="напр. Мах дл 12м">
+          <div class="hint">Идёт в заявку, п.8 «объём груза, размеры».</div></div>
+        <!-- Масса брутто убрана из формы (всегда дефолт «20тн +/-10% т» из config.MASSA_DEFAULT).
+             Чтобы вернуть поле — раскомментируй блок ниже И строку $("massa") в setDefaults().
+        <div><label>Масса брутто</label><input id="massa" placeholder="20тн +/-10% т">
+          <div class="hint">По умолчанию «20тн +/-10% т» — можно изменить или убрать «+/-10%».</div></div>
+        -->
+        <div class="full"><label>Стоимость груза</label><input id="stoimost" placeholder="1 500 000">
+          <div class="hint">По умолчанию 1 500 000. «рос. руб.» добавится автоматически.</div></div>
+        <!-- Упаковка убрана из формы (всегда дефолт «Пачки, навал» из config.UPAKOVKA_DEFAULT).
+             Чтобы вернуть поле — раскомментируй блок ниже.
+        <div class="full"><label>Упаковка</label><input id="upakovka" placeholder="Пачки, навал (по умолчанию)">
+          <div class="hint">Пусто — будет «Пачки, навал». Можно изменить.</div></div>
+        -->
+      </div>
+    </div>
+
+    <!-- Доверенность -->
+    <div class="card">
+      <h2>ДОВЕРЕННОСТЬ</h2>
+      <div class="grid">
+        <div><label>№ доверенности</label><input id="dover_nomer">
+          <div class="hint">Авто (сквозной N-Д) — можно изменить.</div></div>
+        <div><label>Дата доверенности</label>
+          <div class="daterow"><input id="dover_data" placeholder="18.06.2026">
+            <button type="button" class="calbtn" data-for="dover_data" title="Календарь">📅</button>
+            <input type="date" class="calhidden" id="dover_data_cal"></div>
+          <div class="hint">«Действительна по» = +10 дней (считает сервис).</div></div>
+        <div><label>№ спецификации <span style="font-weight:400;color:#888">(необязательно)</span></label>
+          <input id="spec_nomer" placeholder="5-25">
+          <div class="hint">Допишется в доверенность после Договора.</div></div>
+        <div><label>Дата спецификации</label><input id="spec_data" placeholder="19.09.25"></div>
+        <div class="full"><label>ТМЦ — список товаров</label>
+          <div id="tmcRows"></div>
+          <button type="button" id="addTmcBtn">+ добавить товар</button>
+          <div class="hint">Количество — числом (т). Номера строк, прописью и «Итого» посчитает сервис.</div></div>
+      </div>
+    </div>
+
+    <!-- ЗНП (Альфа) -->
+    <div class="card hidden" id="blockZNP">
+      <h2>ЗНП (только Альфа)</h2>
+      <div class="grid">
+        <div class="full"><label>Файл заказа Альфа (.xlsm) — выберите, загрузится на сервер</label>
+          <input type="file" id="znp_pick" accept=".xlsm,.xlsx">
+          <input type="text" id="znp_file" readonly placeholder="путь появится после выбора файла">
+          <div class="hint" id="znp_status"></div></div>
+        <div><label>Дата отгрузки</label>
+          <div class="daterow"><input id="data_otgruzki" placeholder="16.06.2026">
+            <button type="button" class="calbtn" data-for="data_otgruzki" title="Календарь">📅</button>
+            <input type="date" class="calhidden" id="data_otgruzki_cal"></div></div>
+        <div><label>Время приезда авто</label><input id="vremya" placeholder="14.00 - 16.00"></div>
+      </div>
+    </div>
+
+    <!-- Гарантийное письмо (Бета) -->
+    <div class="card hidden" id="blockGarant">
+      <h2>ГАРАНТИЙНОЕ ПИСЬМО (только Бета)</h2>
+      <div class="grid">
+        <div><label>Исх. № письма</label><input id="pismo_nomer">
+          <div class="hint" id="pismoNomerHint"></div></div>
+        <div></div>
+        <div class="full"><label>Приложения (№ + дата спецификации)</label>
+          <div id="prilRows"></div>
+          <button type="button" id="addPrilBtn">+ добавить приложение</button>
+          <div class="hint">Номер и дату вписываете вручную (из заказа Бета). Сколько строк — столько приложений в письме.</div></div>
+      </div>
+    </div>
+
+    <!-- Выгрузка -->
+    <div class="card">
+      <h2>ВЫГРУЗКА</h2>
+      <div class="grid">
+        <div><label>Контактное лицо (п.14 заявки)</label><select id="kontakt_vygruzki"></select></div>
+        <div></div>
+      </div>
+      <div id="vygRows"></div>
+      <button type="button" id="addVygBtn">+ добавить точку</button>
+    </div>
+
+    <!-- Спецификация (необязательно): любой файл, сохраняется в папку пакета как есть -->
+    <div class="card">
+      <h2>СПЕЦИФИКАЦИЯ <span style="font-weight:400;color:#888;font-size:13px">— необязательно</span></h2>
+      <div class="grid">
+        <div class="full"><label>Приложить файл спецификации (PDF или картинка) — сохранится в папку пакета</label>
+          <input type="file" id="spec_pick">
+          <input type="hidden" id="spec_file">
+          <input type="hidden" id="spec_filename">
+          <div class="hint" id="spec_status"></div></div>
+      </div>
+    </div>
+
+    <div class="bar" style="gap:10px;align-items:center">
+      <label style="font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+        <input type="checkbox" id="sign" style="width:auto;margin:0">Проставить подпись и печать</label>
+      <span id="signHint" class="hint"></span>
+    </div>
+    <div class="bar">
+      <button type="submit" id="submitBtn">Сформировать пакет</button>
+      <button type="button" id="resetBtn">Новая заявка</button>
+      <span id="paketHint"></span>
+    </div>
+    <div id="result"></div>
+  </form>
+</div>
+
+<script>
+const GENERATE_URL = "__GENERATE_URL__";   // по умолчанию "/generate" (тот же сервис) — работает из коробки; переопределяется env GENERATE_URL
+const OTHER = "__other__", NONE = "__none__";
+let SPRAV = { postavshchiki: [], tochki_vygruzki: [], perevozchiki: [], kontakty_vygruzki: [] };
+
+const $ = id => document.getElementById(id);
+const val = id => ($(id) ? ($(id).value || "").trim() : "");
+
+// === buildTrip START ===  (чистая функция: значения формы -> TripRequest; тестируется отдельно)
+function buildTrip(v){
+  const drugoyPost = v.postavshchik === OTHER;
+  const trip = {
+    postavshchik: drugoyPost ? (v.post_manual_nazv || "Другой") : v.postavshchik,
+    perevozchik: v.perevozchik === OTHER ? (v.perevozchik_manual || "") : v.perevozchik,
+    data_zagruzki: v.data_zagruzki, zayavka_nomer: v.zayavka_nomer,
+    marshrut: v.marshrut, stavka_summa: v.stavka, kontakt_vygruzki: v.kontakt_vygruzki,
+    voditel: { fio: v.fio, avto: v.avto, pricep: v.pricep, tel_by: v.tel_by, tel_ru: v.tel_ru,
+      pasport_seria: v.pas_ser, pasport_nomer: v.pas_nom, pasport_vydan: v.pas_vyd, pasport_data: v.pas_data },
+    gruz: { gabarit: v.gabarit, massa: v.massa, stoimost: v.stoimost, upakovka: v.upakovka },
+    dover_nomer: v.dover_nomer, dover_data: v.dover_data, pismo_nomer: v.pismo_nomer,
+    data_otgruzki: v.data_otgruzki, vremya_priezda: v.vremya, znp_file: v.znp_file,
+    spec_file: v.spec_file, spec_filename: v.spec_filename,   // приложенный файл спецификации (необязательно)
+    spec_nomer: v.spec_nomer, spec_data: v.spec_data,         // № и дата спецификации → в доверенность
+    sign: !!v.sign,                       // подпись/печать — только если галочка включена
+    tovary: [], prilozheniya: [], vygruzka: []
+  };
+  if (drugoyPost) trip.postavshchik_manual = {
+    nazvanie: v.post_manual_nazv || "Другой", osnovanie: v.post_manual_dog || "",
+    direktor_dat: "", skladskoy_dokument: "net" };
+  if (v.sklad === OTHER) trip.gruzootpraviteli_manual = [{
+    nazvanie: v.sklad_nazv || "", adres: v.sklad_adres || "", kontakt: v.sklad_kontakt || "" }];
+  else if (v.sklad) trip.sklady = [v.sklad];
+  if (Array.isArray(v.tovary) && v.tovary.length) trip.tovary = v.tovary;
+  if (Array.isArray(v.prilozheniya) && v.prilozheniya.length) trip.prilozheniya = v.prilozheniya;
+  if (Array.isArray(v.vygruzka)) trip.vygruzka = v.vygruzka;   // собрано из строк выгрузки (collectVygruzka)
+  return trip;
+}
+// === buildTrip END ===
+
+function collect(){
+  const ids = ["postavshchik","post_manual_nazv","post_manual_dog","sklad","sklad_nazv","sklad_adres",
+    "sklad_kontakt","perevozchik","perevozchik_manual","zayavka_nomer","marshrut","data_zagruzki","stavka",
+    "kontakt_vygruzki","fio","pas_ser",
+    "pas_nom","pas_vyd","pas_data","avto","pricep","tel_by","tel_ru","gabarit","massa","stoimost","upakovka","dover_nomer",
+    "dover_data","pismo_nomer","znp_file","data_otgruzki","vremya","spec_file","spec_filename","spec_nomer","spec_data"];
+  const v = {}; ids.forEach(id => v[id] = val(id)); return v;
+}
+
+// --- Выгрузка: несколько точек (динамические строки, 1 по умолчанию) ---
+function addVygRow(){
+  const row = document.createElement("div");
+  row.className = "vyg vygRow";
+  row.innerHTML =
+    '<div class="grid">'
+    + '<div><label>Точка — получатель</label><select class="vyg_t"></select></div>'
+    + '<div><label>Что выгружаем</label><input class="vyg_g"></div>'
+    + '<div class="vygman hidden"><label>Адрес (если «Другой»)</label><input class="vyg_a"></div>'
+    + '<div class="vygman hidden"><label>Контакт (если «Другой»)</label><input class="vyg_k"></div>'
+    + '</div>'
+    + '<button type="button" class="tmcDel vygDel" title="Убрать точку">✕ убрать точку</button>';
+  $("vygRows").appendChild(row);
+  const sel = row.querySelector(".vyg_t");
+  fillVygruzkaSelect(sel, false);
+  sel.addEventListener("change", () =>
+    row.querySelectorAll(".vygman").forEach(e => e.classList.toggle("hidden", sel.value !== OTHER)));
+}
+// собрать точки: индекс -> точный адрес из справочника; «Другой» -> ручные адрес/контакт
+function collectVygruzka(){
+  const out = [];
+  document.querySelectorAll("#vygRows .vygRow").forEach(row => {
+    const raw = row.querySelector(".vyg_t").value || "";
+    const g = (row.querySelector(".vyg_g").value || "").trim();
+    if (raw === "" || raw === NONE) return;
+    if (raw === OTHER) {
+      out.push({ nazvanie: "", adres: (row.querySelector(".vyg_a").value || "").trim(),
+                 kontakt: (row.querySelector(".vyg_k").value || "").trim(), gruz: g });
+    } else {
+      const t = SPRAV.tochki_vygruzki[parseInt(raw, 10)];
+      if (t) out.push({ nazvanie: t.nazvanie, adres: t.adres || "", kontakt: t.kontakt || "", gruz: g });
+    }
+  });
+  return out;
+}
+
+// --- ТМЦ доверенности: несколько товаров (динамические строки) ---
+function addTmcRow(naim, kol){
+  const row = document.createElement("div");
+  row.className = "tmcRow";
+  row.innerHTML = '<input class="tmc_naim" placeholder="Наименование (Металлопрокат)">'
+    + '<input class="tmc_kol" placeholder="кол-во, т (22 или 19.992)">'
+    + '<button type="button" class="tmcDel" title="Убрать строку">✕</button>';
+  $("tmcRows").appendChild(row);
+  if (naim) row.querySelector(".tmc_naim").value = naim;
+  if (kol) row.querySelector(".tmc_kol").value = kol;
+}
+function collectTovary(){
+  const out = [];
+  document.querySelectorAll("#tmcRows .tmcRow").forEach(r => {
+    const naim = (r.querySelector(".tmc_naim").value || "").trim();
+    const kol = (r.querySelector(".tmc_kol").value || "").trim();
+    if (naim || kol) out.push({ naimenovanie: naim || "Металлопрокат", ed: "тн", kol: kol });
+  });
+  return out;
+}
+
+// --- Приложения гарантийного письма: несколько (динамические строки) ---
+function addPrilRow(nomer, data){
+  const row = document.createElement("div");
+  row.className = "tmcRow";
+  row.innerHTML = '<input class="pril_n" placeholder="№ приложения (000101)">'
+    + '<input class="pril_d" placeholder="дата (08.06.2026 г.)">'
+    + '<button type="button" class="tmcDel" title="Убрать строку">✕</button>';
+  $("prilRows").appendChild(row);
+  if (nomer) row.querySelector(".pril_n").value = nomer;
+  if (data) row.querySelector(".pril_d").value = data;
+}
+function collectPrilozheniya(){
+  const out = [];
+  document.querySelectorAll("#prilRows .tmcRow").forEach(r => {
+    const nomer = (r.querySelector(".pril_n").value || "").trim();
+    const data = (r.querySelector(".pril_d").value || "").trim();
+    if (nomer) out.push({ nomer: nomer, data: data });
+  });
+  return out;
+}
+
+function opt(value, text){ const o = document.createElement("option"); o.value = value; o.textContent = text; return o; }
+
+function fillPostavshchiki(){
+  const sel = $("postavshchik");
+  sel.appendChild(opt("", "— выберите —"));
+  SPRAV.postavshchiki.forEach(p => sel.appendChild(opt(p.code, p.nazvanie)));
+  sel.appendChild(opt(OTHER, "Другой (вписать вручную)"));
+}
+function fillPerevozchiki(){
+  const sel = $("perevozchik");
+  sel.appendChild(opt("", "— выберите —"));
+  SPRAV.perevozchiki.forEach(p => sel.appendChild(opt(p.nazvanie, p.nazvanie)));   // значение = название
+  sel.appendChild(opt(OTHER, "Другой (вписать вручную)"));
+}
+function onPerevozchikChange(){
+  $("perevozchikManualWrap").classList.toggle("hidden", $("perevozchik").value !== OTHER);
+}
+function fillKontakty(){
+  const sel = $("kontakt_vygruzki");
+  SPRAV.kontakty_vygruzki.forEach(k => sel.appendChild(opt(k, k)));   // первый — по умолчанию
+}
+function setDefaults(){              // частые значения «как обычно» — пред-заполняем, можно менять
+  // $("massa").value = "20тн +/-10% т";   // поле массы убрано из формы; дефолт даёт config.MASSA_DEFAULT
+  $("stoimost").value = "1 500 000";
+}
+function tochkaLabel(t){
+  let a = (t.adres || "").trim();
+  if (a.length > 44) a = a.slice(0, 42) + "…";       // в списке адрес кратко — чтобы различать одинаковые названия
+  return a ? (t.nazvanie + " — " + a) : t.nazvanie;
+}
+function fillVygruzkaSelect(sel, withNone){
+  sel.innerHTML = "";
+  if (withNone) sel.appendChild(opt(NONE, "— нет —"));
+  else sel.appendChild(opt("", "— выберите —"));
+  // значение = индекс точки в справочнике (названия бывают одинаковые — индекс уникален)
+  SPRAV.tochki_vygruzki.forEach((t, i) => sel.appendChild(opt(String(i), tochkaLabel(t))));
+  sel.appendChild(opt(OTHER, "Другой (вписать вручную)"));
+}
+
+function onSupplierChange(){
+  const code = $("postavshchik").value;
+  const drugoy = code === OTHER;
+  $("postManualNazvWrap").classList.toggle("hidden", !drugoy);
+  $("postManualDogWrap").classList.toggle("hidden", !drugoy);
+
+  // склады выбранного поставщика
+  const sk = $("sklad"); sk.innerHTML = "";
+  sk.appendChild(opt("", "— выберите —"));
+  const p = SPRAV.postavshchiki.find(x => x.code === code);
+  if (p) p.sklady.forEach(g => sk.appendChild(opt(g, g)));
+  sk.appendChild(opt(OTHER, "Другой склад (вписать вручную)"));
+  onSkladChange();
+
+  // условные блоки документов
+  const dok = p ? p.skladskoy_dokument : "net";
+  $("blockZNP").classList.toggle("hidden", dok !== "znp");
+  $("blockGarant").classList.toggle("hidden", dok !== "garant");
+
+  // живая подсказка: что будет сформировано (Альфа — без доверенности)
+  const pak = ["заявка"];
+  if (dok !== "znp") pak.push("доверенность");
+  if (dok === "znp") pak.push("ЗНП");
+  if (dok === "garant") pak.push("гарантийное письмо");
+  $("paketHint").textContent = code ? ("Будет сформировано: " + pak.join(" + ")) : "";
+}
+function onSkladChange(){
+  const other = $("sklad").value === OTHER;
+  $("skManualNazvWrap").classList.toggle("hidden", !other);
+  $("skManualAdrWrap").classList.toggle("hidden", !other);
+  $("skManualKonWrap").classList.toggle("hidden", !other);
+}
+
+// Загрузка файла заказа Альфа: проводник -> файл уходит на сервер -> путь подставляется в znp_file.
+async function uploadZnp(e){
+  const file = e.target.files[0];
+  if (!file){ return; }
+  $("znp_status").textContent = "Загрузка…";
+  try{
+    const fd = new FormData(); fd.append("file", file);
+    const r = await fetch("/upload_znp", { method:"POST", body: fd });
+    const d = await r.json();
+    if (r.ok && d.path){ $("znp_file").value = d.path; $("znp_status").textContent = "Загружено: " + d.filename; }
+    else { $("znp_status").textContent = "Ошибка загрузки файла"; }
+  }catch(err){ $("znp_status").textContent = "Ошибка: " + err; }
+}
+
+// Загрузка файла спецификации: проводник -> файл уходит на сервер -> путь+имя в скрытые поля.
+async function uploadSpec(e){
+  const file = e.target.files[0];
+  if (!file){ $("spec_file").value = ""; $("spec_filename").value = ""; $("spec_status").textContent = ""; return; }
+  $("spec_status").textContent = "Загрузка…";
+  try{
+    const fd = new FormData(); fd.append("file", file);
+    const r = await fetch("/upload_spec", { method:"POST", body: fd });
+    const d = await r.json();
+    if (r.ok && d.path){ $("spec_file").value = d.path; $("spec_filename").value = d.filename;
+                         $("spec_status").textContent = "Приложено: " + d.filename; }
+    else { $("spec_status").textContent = "Ошибка загрузки файла"; }
+  }catch(err){ $("spec_status").textContent = "Ошибка: " + err; }
+}
+
+// Разбор текста перевозчика -> заполнение полей водителя (поля остаются редактируемыми).
+async function parseVoditel(){
+  const text = $("voditel_raw").value;
+  if (!text.trim()){ $("parseStatus").textContent = "Вставьте текст выше."; return; }
+  $("parseStatus").textContent = "Разбираю…";
+  try{
+    const r = await fetch("/parse_voditel", { method:"POST", headers:{"Content-Type":"application/json"},
+                                              body: JSON.stringify({ text }) });
+    const d = await r.json();
+    const map = { avto:"avto", pricep:"pricep", fio:"fio", pasport_seria:"pas_ser", pasport_nomer:"pas_nom",
+                  pasport_vydan:"pas_vyd", pasport_data:"pas_data", tel_by:"tel_by", tel_ru:"tel_ru" };
+    let filled = 0;
+    for (const k in map){ const el = $(map[k]); if (el){ el.value = d[k] || ""; if (d[k]) filled++; } }
+    $("parseStatus").textContent = "Разобрано полей: " + filled + " — проверьте.";
+  }catch(e){ $("parseStatus").textContent = "Ошибка разбора: " + e; }
+}
+
+async function init(){
+  try{
+    SPRAV = await (await fetch("/spravochniki")).json();
+  }catch(e){ showResult("err", "Не удалось загрузить справочники: " + e); return; }
+  await loadNumbers();
+  fillPostavshchiki();
+  fillPerevozchiki();
+  fillKontakty();
+  setDefaults();
+  $("postavshchik").addEventListener("change", onSupplierChange);
+  $("perevozchik").addEventListener("change", onPerevozchikChange);
+  $("sklad").addEventListener("change", onSkladChange);
+  $("znp_pick").addEventListener("change", uploadZnp);
+  $("spec_pick").addEventListener("change", uploadSpec);
+  $("parseBtn").addEventListener("click", parseVoditel);
+  $("resetBtn").addEventListener("click", resetForm);
+  $("sign").addEventListener("change", updateSignHint);
+  $("addTmcBtn").addEventListener("click", () => addTmcRow());
+  $("tmcRows").addEventListener("click", e => {
+    if (!e.target.classList.contains("tmcDel")) return;
+    const rows = document.querySelectorAll("#tmcRows .tmcRow");
+    if (rows.length > 1) e.target.closest(".tmcRow").remove();
+    else e.target.closest(".tmcRow").querySelectorAll("input").forEach(i => i.value = "");
+  });
+  addTmcRow();   // одна строка ТМЦ по умолчанию
+  $("addPrilBtn").addEventListener("click", () => addPrilRow());
+  $("prilRows").addEventListener("click", e => {
+    if (!e.target.classList.contains("tmcDel")) return;
+    const rows = document.querySelectorAll("#prilRows .tmcRow");
+    if (rows.length > 1) e.target.closest(".tmcRow").remove();
+    else e.target.closest(".tmcRow").querySelectorAll("input").forEach(i => i.value = "");
+  });
+  addPrilRow();   // одна строка приложения по умолчанию
+  $("addVygBtn").addEventListener("click", () => addVygRow());
+  $("vygRows").addEventListener("click", e => {
+    if (!e.target.classList.contains("vygDel")) return;
+    const rows = document.querySelectorAll("#vygRows .vygRow");
+    if (rows.length > 1) e.target.closest(".vygRow").remove();
+    else e.target.closest(".vygRow").querySelectorAll("input").forEach(i => i.value = "");
+  });
+  addVygRow();   // одна точка выгрузки по умолчанию
+  // как только поле начали заполнять — убираем красную подсветку
+  $("f").addEventListener("input", e => e.target.classList.remove("invalid"));
+  $("f").addEventListener("change", e => e.target.classList.remove("invalid"));
+  wireCalendars();
+  onSupplierChange();
+}
+
+// дата из календаря (ISO ГГГГ-ММ-ДД) -> текст ДД.ММ.ГГГГ в парное текстовое поле
+function fmtDate(iso){ if(!iso) return ""; const [y,m,d] = iso.split("-"); return d + "." + m + "." + y; }
+function wireCalendars(){
+  document.querySelectorAll(".calbtn").forEach(function(btn){
+    const target = $(btn.dataset.for), hidden = $(btn.dataset.for + "_cal");
+    btn.addEventListener("click", function(){ try{ hidden.showPicker(); }catch(_){ hidden.click(); } });
+    hidden.addEventListener("change", function(){ target.value = fmtDate(hidden.value); });
+  });
+}
+
+// авто-номера исходящих (ДДММ/N по сегодняшней дате); вызывается при загрузке и при «Новая заявка»
+async function loadNumbers(){
+  try{
+    const nn = await (await fetch("/next_nomer")).json();
+    $("zayavka_nomer").value = nn.zayavka;
+    $("pismo_nomer").value = nn.pismo;
+    $("dover_nomer").value = nn.doverennost;   // авто № доверенности (N-Д, сквозной) — можно изменить
+    $("dover_data").value = nn.date;          // дата доверенности по умолчанию — сегодня (серверная), можно изменить
+    $("nomerHint").textContent = "Авто по дате " + nn.date + " (" + nn.ddmm + "/N) — можно изменить";
+    $("pismoNomerHint").textContent = "Авто — можно изменить";
+  }catch(_){}
+}
+
+// очистить форму под новую заявку (без перезагрузки)
+function resetForm(){
+  if(!confirm("Очистить форму для новой заявки?")) return;
+  document.querySelectorAll("#f input, #f select, #f textarea").forEach(function(el){
+    if(el.tagName === "SELECT") el.selectedIndex = 0;
+    else if(el.type === "checkbox") el.checked = false;   // галочку подписи тоже сбрасываем
+    else el.value = "";
+  });
+  updateSignHint();
+  $("result").innerHTML = "";
+  $("znp_status").textContent = "";
+  $("spec_status").textContent = "";
+  $("parseStatus").textContent = "";
+  clearInvalids();
+  $("tmcRows").innerHTML = ""; addTmcRow();   // вернуть одну пустую строку ТМЦ
+  $("prilRows").innerHTML = ""; addPrilRow(); // вернуть одну пустую строку приложения
+  $("vygRows").innerHTML = ""; addVygRow();   // вернуть одну точку выгрузки
+  setDefaults();                              // вернуть дефолты массы/стоимости
+  loadNumbers();
+  onSupplierChange();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// --- проверка обязательных полей ДО отправки (подсветить, сфокусировать, не слать) ---
+const REQUIRED = [
+  ["postavshchik","Поставщик"], ["sklad","Склад погрузки"], ["perevozchik","Перевозчик (адресат заявки)"],
+  ["zayavka_nomer","Исх. № заявки"], ["data_zagruzki","Дата загрузки"], ["fio","ФИО водителя"],
+  ["pas_ser","Паспорт: серия"], ["pas_nom","Паспорт: номер"], ["avto","Авто (марка, гос. номер)"]
+];
+function clearInvalids(){ document.querySelectorAll(".invalid").forEach(e => e.classList.remove("invalid")); }
+function validateRequired(){
+  clearInvalids();
+  const bad = [];
+  REQUIRED.forEach(r => { if (!val(r[0])) bad.push({ el: $(r[0]), name: r[1] }); });
+  // условные — становятся обязательными при выборе «Другой»
+  if (val("postavshchik") === OTHER && !val("post_manual_nazv"))
+    bad.push({ el: $("post_manual_nazv"), name: "Поставщик «Другой» — название" });
+  if (val("perevozchik") === OTHER && !val("perevozchik_manual"))
+    bad.push({ el: $("perevozchik_manual"), name: "Перевозчик «Другой» — название" });
+  if (val("sklad") === OTHER && !val("sklad_nazv"))
+    bad.push({ el: $("sklad_nazv"), name: "Склад «Другой» — название" });
+  // выгрузка: хотя бы одна точка выбрана; «Другой» — нужен адрес
+  const vygRows = [...document.querySelectorAll("#vygRows .vygRow")];
+  const anySel = vygRows.some(r => { const x = r.querySelector(".vyg_t").value; return x && x !== NONE; });
+  if (!anySel && vygRows[0])
+    bad.push({ el: vygRows[0].querySelector(".vyg_t"), name: "Точка выгрузки (хотя бы одна)" });
+  vygRows.forEach(r => {
+    if (r.querySelector(".vyg_t").value === OTHER && !(r.querySelector(".vyg_a").value || "").trim())
+      bad.push({ el: r.querySelector(".vyg_a"), name: "Адрес выгрузки («Другой»)" });
+  });
+  bad.forEach(b => b.el.classList.add("invalid"));
+  return bad;
+}
+
+function updateSignHint(){
+  $("signHint").textContent = $("sign").checked
+    ? "⚠ Документы будут заверены подписью директора и печатью «Ромашка»."
+    : "";
+}
+
+function showResult(kind, html){ $("result").innerHTML = '<div class="box '+kind+'">'+html+'</div>'; }
+
+$("f").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const bad = validateRequired();
+  if (bad.length){
+    showResult("err", "Заполните обязательные поля:<ul>"
+      + bad.map(b => "<li>" + escapeHtml(b.name) + "</li>").join("") + "</ul>");
+    bad[0].el.focus();
+    bad[0].el.scrollIntoView({ behavior:"smooth", block:"center" });
+    return;
+  }
+  const v = collect();
+  v.sign = $("sign").checked;
+  v.vygruzka = collectVygruzka();
+  v.tovary = collectTovary();
+  v.prilozheniya = collectPrilozheniya();
+  const trip = buildTrip(v);
+  if (trip.sign && !confirm("Документы будут заверены подписью директора и печатью «Ромашка».\nЭто юридически значимо. Подтвердить?")){
+    return;   // подпись отменили — пакет не отправляем
+  }
+  $("submitBtn").disabled = true;
+  showResult("warn", "Отправка…");
+  try{
+    const r = await fetch(GENERATE_URL, { method:"POST", headers:{"Content-Type":"application/json"},
+                                          body: JSON.stringify(trip) });
+    const txt = await r.text();
+    let data; try{ data = JSON.parse(txt); }catch(_){ data = txt; }
+    if (!r.ok) { showResult("err", formatServerError(r.status, data)); }
+    else {
+      let html = "Готово.";
+      if (data && data.dokumenty) {
+        const base = "/files/" + encodeURIComponent(data.session||"") + "/";
+        html = "Пакет: <b>" + (data.sostav_paketa||[]).join(", ") + "</b><ul>"
+             + data.dokumenty.map(d => { const tag = d.tip === "specifikaciya" ? "📎 спецификация: " : "";
+                 return '<li>'+tag+'<a href="'+base+encodeURIComponent(d.fail)+'" download>⬇ '+escapeHtml(d.fail)+'</a></li>'; }).join("")
+             + "</ul>";
+        if (data.dokumenty.length > 1 && data.session)
+          html += '<a class="ziplink" href="/zip/' + encodeURIComponent(data.session) + '" download>⬇ Скачать всё одним архивом (zip)</a>';
+        if (data.predupezhdeniya && data.predupezhdeniya.length)
+          html += "Проверьте: <ul>" + data.predupezhdeniya.map(w => "<li>"+escapeHtml(w.soobshchenie)+"</li>").join("") + "</ul>";
+      }
+      showResult("ok", html);
+    }
+  }catch(e){ showResult("err", "Не удалось связаться с сервисом: " + escapeHtml(String(e)) + "<br>Проверьте, что сервис документов запущен."); }
+  $("submitBtn").disabled = false;
+});
+// Понятный разбор ошибок сервиса: 400/404 -> {detail:"текст"}; 422 (валидация) -> {detail:[{loc,msg}]}
+function formatServerError(status, data){
+  const d = data && data.detail;
+  if (typeof d === "string")
+    return "Ошибка: " + escapeHtml(d);
+  if (Array.isArray(d)){
+    const items = d.map(e => {
+      const loc = Array.isArray(e.loc) ? e.loc.filter(x => x !== "body").join(" → ") : "";
+      return "<li>" + (loc ? "<b>" + escapeHtml(loc) + "</b>: " : "") + escapeHtml(e.msg || "") + "</li>";
+    }).join("");
+    return "Проверьте заполнение полей:<ul>" + items + "</ul>";
+  }
+  const raw = (typeof data === "string") ? data : JSON.stringify(data);
+  return "Ошибка " + status + ": " + escapeHtml(raw);
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+init();
+</script>
+</body>
+</html>

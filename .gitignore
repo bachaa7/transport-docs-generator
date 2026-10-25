@@ -1,0 +1,35 @@
+# Виртуальное окружение и кэш Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Рабочее состояние сервера (генерируется/копится при работе — НЕ в репозиторий)
+output/
+uploads/
+data/
+input_dir/upload_znp/
+
+# Секреты (пароли, ключи, токены) — НИКОГДА в git. Складывай их сюда.
+.env
+*.env
+secrets.*
+
+# Подпись директора и печать компании — приватные реквизиты, НЕ в git.
+# Кладутся на сервер вручную в эту папку (см. config.ASSETS_DIR).
+assets_private/
+
+# Системное
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Сборка PyInstaller и архивы
+build/
+dist/
+*.zip
+
+# Локальные настройки ассистентов
+.claude/
+CLAUDE.md
